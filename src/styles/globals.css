@@ -10,8 +10,13 @@ body {
   padding: 0;
 }
 
+html {
+  background: var(--color-background);
+}
+
 body {
   min-width: 320px;
+  min-height: 100svh;
   font-family: var(--font-sans);
   background-color: var(--color-background);
   color: var(--color-text);
