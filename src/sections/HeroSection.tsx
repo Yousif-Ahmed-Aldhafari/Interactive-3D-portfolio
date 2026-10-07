@@ -1,4 +1,4 @@
-import ExperienceCanvas from "@/three/scene/ExperienceCanvas";
+import InteractiveCharacterStage from "@/components/character/InteractiveCharacterStage";
 import "./HeroSection.css";
 
 function HeroSection() {
@@ -22,11 +22,8 @@ function HeroSection() {
         </div>
 
         <div className="hero__visual">
-          <div
-            className="hero__stage"
-            aria-label="Reserved area for the interactive 3D character"
-          >
-            <ExperienceCanvas />
+          <div className="hero__stage">
+            <InteractiveCharacterStage />
           </div>
         </div>
       </div>
