@@ -1,13 +1,147 @@
+import { useEffect, useRef } from "react";
 import "./InteractiveCharacterStage.css";
 
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
 function InteractiveCharacterStage() {
+  const artworkRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const artwork = artworkRef.current;
+    if (!artwork) return;
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const smoothing = 14;
+    const tolerance = 0.01;
+    let targetX = 0;
+    let targetY = 0;
+    let currentX = 0;
+    let currentY = 0;
+    let frameId: number | null = null;
+    let lastFrameTime = 0;
+
+    function writePosition() {
+      artwork!.style.setProperty("--iris-x", `${currentX}px`);
+      artwork!.style.setProperty("--iris-y", `${currentY}px`);
+    }
+
+    function animate(timestamp: number) {
+      frameId = null;
+      const deltaTime = Math.max(0, (timestamp - lastFrameTime) / 1000);
+      lastFrameTime = timestamp;
+      const alpha = 1 - Math.exp(-smoothing * deltaTime);
+
+      currentX += (targetX - currentX) * alpha;
+      currentY += (targetY - currentY) * alpha;
+
+      const settled =
+        Math.abs(targetX - currentX) <= tolerance &&
+        Math.abs(targetY - currentY) <= tolerance;
+
+      if (settled) {
+        currentX = targetX;
+        currentY = targetY;
+      }
+
+      writePosition();
+
+      if (!settled) {
+        frameId = window.requestAnimationFrame(animate);
+      }
+    }
+
+    function startAnimation() {
+      if (
+        frameId !== null ||
+        (Math.abs(targetX - currentX) <= tolerance &&
+          Math.abs(targetY - currentY) <= tolerance)
+      ) {
+        return;
+      }
+
+      lastFrameTime = performance.now();
+      frameId = window.requestAnimationFrame(animate);
+    }
+
+    function handlePointerMove(event: PointerEvent) {
+      if (event.pointerType === "touch" || reducedMotion.matches) return;
+
+      const rect = artwork!.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const deltaX = event.clientX - centerX;
+      const deltaY = event.clientY - centerY;
+      const distanceX = deltaX < 0 ? centerX : window.innerWidth - centerX;
+      const distanceY = deltaY < 0 ? centerY : window.innerHeight - centerY;
+      const normalizedX = clamp(deltaX / Math.max(distanceX, 1), -1, 1);
+      const normalizedY = clamp(deltaY / Math.max(distanceY, 1), -1, 1);
+      const maxX = clamp(rect.width * 0.012, 2.5, 7);
+      const maxY = clamp(rect.height * 0.004, 1.5, 4.5);
+
+      targetX = normalizedX * maxX;
+      targetY = normalizedY * maxY;
+      startAnimation();
+    }
+
+    function returnToNeutral() {
+      targetX = 0;
+      targetY = 0;
+      startAnimation();
+    }
+
+    function handlePointerOut(event: PointerEvent) {
+      if (event.pointerType !== "touch" && event.relatedTarget === null) {
+        returnToNeutral();
+      }
+    }
+
+    function handleMotionPreferenceChange() {
+      if (!reducedMotion.matches) return;
+
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+        frameId = null;
+      }
+
+      targetX = 0;
+      targetY = 0;
+      currentX = 0;
+      currentY = 0;
+      writePosition();
+    }
+
+    writePosition();
+    window.addEventListener("pointermove", handlePointerMove, {
+      passive: true,
+    });
+    window.addEventListener("pointerout", handlePointerOut);
+    window.addEventListener("blur", returnToNeutral);
+    reducedMotion.addEventListener("change", handleMotionPreferenceChange);
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerout", handlePointerOut);
+      window.removeEventListener("blur", returnToNeutral);
+      reducedMotion.removeEventListener("change", handleMotionPreferenceChange);
+
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+
+      artwork.style.setProperty("--iris-x", "0px");
+      artwork.style.setProperty("--iris-y", "0px");
+    };
+  }, []);
+
   return (
     <div
       className="interactive-character"
       role="img"
       aria-label="Stylized interactive portfolio character"
     >
-      <div className="interactive-character__artwork">
+      <div className="interactive-character__artwork" ref={artworkRef}>
         <img
           className="interactive-character__body"
           src="/images/character/body.png"
