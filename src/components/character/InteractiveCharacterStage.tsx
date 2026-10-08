@@ -14,17 +14,41 @@ function InteractiveCharacterStage() {
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const smoothing = 14;
+    const headSmoothing = 6;
     const tolerance = 0.01;
+    const rotationTolerance = 0.005;
     let targetX = 0;
     let targetY = 0;
+    let targetHeadX = 0;
+    let targetHeadY = 0;
+    let targetHeadRotation = 0;
     let currentX = 0;
     let currentY = 0;
+    let currentHeadX = 0;
+    let currentHeadY = 0;
+    let currentHeadRotation = 0;
     let frameId: number | null = null;
     let lastFrameTime = 0;
 
     function writePosition() {
       artwork!.style.setProperty("--iris-x", `${currentX}px`);
       artwork!.style.setProperty("--iris-y", `${currentY}px`);
+      artwork!.style.setProperty("--head-x", `${currentHeadX}px`);
+      artwork!.style.setProperty("--head-y", `${currentHeadY}px`);
+      artwork!.style.setProperty(
+        "--head-rotation",
+        `${currentHeadRotation}deg`,
+      );
+    }
+
+    function isSettled() {
+      return (
+        Math.abs(targetX - currentX) <= tolerance &&
+        Math.abs(targetY - currentY) <= tolerance &&
+        Math.abs(targetHeadX - currentHeadX) <= tolerance &&
+        Math.abs(targetHeadY - currentHeadY) <= tolerance &&
+        Math.abs(targetHeadRotation - currentHeadRotation) <= rotationTolerance
+      );
     }
 
     function animate(timestamp: number) {
@@ -32,17 +56,23 @@ function InteractiveCharacterStage() {
       const deltaTime = Math.max(0, (timestamp - lastFrameTime) / 1000);
       lastFrameTime = timestamp;
       const alpha = 1 - Math.exp(-smoothing * deltaTime);
+      const headAlpha = 1 - Math.exp(-headSmoothing * deltaTime);
 
       currentX += (targetX - currentX) * alpha;
       currentY += (targetY - currentY) * alpha;
+      currentHeadX += (targetHeadX - currentHeadX) * headAlpha;
+      currentHeadY += (targetHeadY - currentHeadY) * headAlpha;
+      currentHeadRotation +=
+        (targetHeadRotation - currentHeadRotation) * headAlpha;
 
-      const settled =
-        Math.abs(targetX - currentX) <= tolerance &&
-        Math.abs(targetY - currentY) <= tolerance;
+      const settled = isSettled();
 
       if (settled) {
         currentX = targetX;
         currentY = targetY;
+        currentHeadX = targetHeadX;
+        currentHeadY = targetHeadY;
+        currentHeadRotation = targetHeadRotation;
       }
 
       writePosition();
@@ -53,11 +83,7 @@ function InteractiveCharacterStage() {
     }
 
     function startAnimation() {
-      if (
-        frameId !== null ||
-        (Math.abs(targetX - currentX) <= tolerance &&
-          Math.abs(targetY - currentY) <= tolerance)
-      ) {
+      if (frameId !== null || isSettled()) {
         return;
       }
 
@@ -79,15 +105,24 @@ function InteractiveCharacterStage() {
       const normalizedY = clamp(deltaY / Math.max(distanceY, 1), -1, 1);
       const maxX = clamp(rect.width * 0.012, 2.5, 7);
       const maxY = clamp(rect.height * 0.004, 1.5, 4.5);
+      const maxHeadX = clamp(rect.width * 0.009, 2, 6);
+      const maxHeadY = clamp(rect.height * 0.003, 1, 4);
+      const maxHeadRotation = 1.4;
 
       targetX = normalizedX * maxX;
       targetY = normalizedY * maxY;
+      targetHeadX = normalizedX * maxHeadX;
+      targetHeadY = normalizedY * maxHeadY;
+      targetHeadRotation = normalizedX * maxHeadRotation;
       startAnimation();
     }
 
     function returnToNeutral() {
       targetX = 0;
       targetY = 0;
+      targetHeadX = 0;
+      targetHeadY = 0;
+      targetHeadRotation = 0;
       startAnimation();
     }
 
@@ -107,8 +142,14 @@ function InteractiveCharacterStage() {
 
       targetX = 0;
       targetY = 0;
+      targetHeadX = 0;
+      targetHeadY = 0;
+      targetHeadRotation = 0;
       currentX = 0;
       currentY = 0;
+      currentHeadX = 0;
+      currentHeadY = 0;
+      currentHeadRotation = 0;
       writePosition();
     }
 
@@ -132,6 +173,9 @@ function InteractiveCharacterStage() {
 
       artwork.style.setProperty("--iris-x", "0px");
       artwork.style.setProperty("--iris-y", "0px");
+      artwork.style.setProperty("--head-x", "0px");
+      artwork.style.setProperty("--head-y", "0px");
+      artwork.style.setProperty("--head-rotation", "0deg");
     };
   }, []);
 

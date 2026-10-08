@@ -9,6 +9,9 @@
 .interactive-character__artwork {
   --iris-x: 0px;
   --iris-y: 0px;
+  --head-x: 0px;
+  --head-y: 0px;
+  --head-rotation: 0deg;
 
   position: relative;
   height: 100%;
@@ -36,7 +39,10 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  transform: translateY(0.4%);
+  transform: translateY(0.4%) translate3d(var(--head-x), var(--head-y), 0)
+    rotate(var(--head-rotation));
+  transform-origin: 50% 40%;
+  will-change: transform;
 }
 
 .interactive-character__head {
