@@ -12,6 +12,8 @@
   --head-x: 0px;
   --head-y: 0px;
   --head-rotation: 0deg;
+  --body-x: 0px;
+  --body-y: 0px;
 
   position: relative;
   height: 100%;
@@ -32,6 +34,8 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
+  transform: translate3d(var(--body-x), var(--body-y), 0);
+  will-change: transform;
 }
 
 .interactive-character__head-group {
@@ -39,7 +43,12 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  transform: translateY(0.4%) translate3d(var(--head-x), var(--head-y), 0)
+  transform: translateY(0.4%)
+    translate3d(
+      calc(var(--body-x) + var(--head-x)),
+      calc(var(--body-y) + var(--head-y)),
+      0
+    )
     rotate(var(--head-rotation));
   transform-origin: 50% 40%;
   will-change: transform;
